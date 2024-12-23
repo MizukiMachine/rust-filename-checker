@@ -49,7 +49,7 @@ fn main() {
         vec!["png".to_string(), "jpg".to_string()],
     );
 
-    // カレントディレクトリ以下のファイルを再帰的にチェック
+    // 指定ディレクトリ以下のファイルを再帰的にチェック
     for entry in WalkDir::new("./checktarget")
         .into_iter()
         .filter_map(|e| e.ok())
