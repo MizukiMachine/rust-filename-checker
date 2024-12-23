@@ -2,14 +2,12 @@ use regex::Regex;
 use std::path::Path;
 use walkdir::WalkDir;
 
-// アセットのチェックを行う構造体
 struct AssetChecker {
-    name_pattern: Regex,             // ファイル名のパターン（例：^[a-z][a-z0-9_]*$）
-    allowed_extensions: Vec<String>, // 許可する拡張子（例：["png", "jpg"]）
+    name_pattern: Regex,
+    allowed_extensions: Vec<String>,
 }
 
 impl AssetChecker {
-    // 新しいチェッカーを作成
     fn new(pattern: &str, extensions: Vec<String>) -> Self {
         AssetChecker {
             name_pattern: Regex::new(pattern).unwrap(),
@@ -17,15 +15,20 @@ impl AssetChecker {
         }
     }
 
-    // ファイルをチェックするメソッド
     fn check_file(&self, path: &Path) -> Result<(), String> {
-        // ファイル名を取得
-        if let Some(file_name) = path.file_name() {
-            let name_str = file_name.to_string_lossy();
+        if path.file_name().is_some() {
+            // ファイル名から拡張子を除いた部分を取得
+            let name_without_ext = path
+                .file_stem()
+                .map(|s| s.to_string_lossy())
+                .unwrap_or_default();
 
-            // 命名規則のチェック
-            if !self.name_pattern.is_match(&name_str) {
-                return Err(format!("Invalid file name: {}", name_str));
+            // 拡張子を除いたファイル名でパターンマッチング
+            if !self.name_pattern.is_match(&name_without_ext) {
+                return Err(format!(
+                    "Invalid file name: {} (without extension)",
+                    name_without_ext
+                ));
             }
 
             // 拡張子のチェック
@@ -39,7 +42,6 @@ impl AssetChecker {
         Ok(())
     }
 }
-
 fn main() {
     // チェッカーの初期化（例：小文字とアンダースコアのみを許可）
     let checker = AssetChecker::new(
@@ -48,7 +50,10 @@ fn main() {
     );
 
     // カレントディレクトリ以下のファイルを再帰的にチェック
-    for entry in WalkDir::new(".").into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new("./checktarget")
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
         let path = entry.path();
         if path.is_file() {
             match checker.check_file(path) {
